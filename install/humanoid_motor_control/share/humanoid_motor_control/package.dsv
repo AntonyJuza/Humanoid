@@ -1,0 +1,5 @@
+source;share/humanoid_motor_control/local_setup.bash
+source;share/humanoid_motor_control/local_setup.dsv
+source;share/humanoid_motor_control/local_setup.ps1
+source;share/humanoid_motor_control/local_setup.sh
+source;share/humanoid_motor_control/local_setup.zsh

@@ -1,0 +1,12 @@
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/uninstall.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/humanoid_motor_control_uninstall.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/cytron_controller_node.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/encoder_node.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/diff_drive_controller.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/test.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/edit_cache.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/rebuild_cache.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/list_install_components.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/install.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/install/local.dir
+/home/juza/humanoid_ws/build/humanoid_motor_control/CMakeFiles/install/strip.dir

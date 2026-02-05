@@ -1,0 +1,67 @@
+[0.005s] Invoking command in '/home/juza/humanoid_ws/build/humanoid_motor_control': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/juza/humanoid_ws/src/humanoid_motor_control -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/juza/humanoid_ws/install/humanoid_motor_control
+[0.016s] -- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.147s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.151s] -- Found rclcpp: 28.1.16 (/opt/ros/jazzy/share/rclcpp/cmake)
+[0.166s] -- Found rosidl_generator_c: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[0.170s] -- Found rosidl_generator_cpp: 4.6.7 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[0.176s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.182s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.214s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[0.214s] -- Found rmw_fastrtps_cpp: 8.4.3 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[0.254s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[0.291s] -- Found std_msgs: 5.3.6 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.297s] -- Found geometry_msgs: 5.3.6 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[0.305s] -- Found sensor_msgs: 5.3.6 (/opt/ros/jazzy/share/sensor_msgs/cmake)
+[0.317s] -- Found nav_msgs: 5.3.6 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[0.331s] -- Found tf2: 0.36.19 (/opt/ros/jazzy/share/tf2/cmake)
+[0.333s] -- Found tf2_ros: 0.36.19 (/opt/ros/jazzy/share/tf2_ros/cmake)
+[0.388s] -- Found tf2_geometry_msgs: 0.36.19 (/opt/ros/jazzy/share/tf2_geometry_msgs/cmake)
+[0.390s] -- Found eigen3_cmake_module: 0.3.0 (/opt/ros/jazzy/share/eigen3_cmake_module/cmake)
+[0.391s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[0.394s] -- Found ament_lint_auto: 0.17.4 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[0.443s] -- Added test 'copyright' to check source files copyright and LICENSE
+[0.443s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[0.443s] -- Configured cppcheck include dirs: 
+[0.443s] -- Configured cppcheck exclude dirs and/or files: 
+[0.443s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[0.444s] -- Configured cpplint exclude dirs and/or files: 
+[0.444s] -- Added test 'lint_cmake' to check CMake code style
+[0.444s] -- Added test 'uncrustify' to check C / C++ code style
+[0.444s] -- Configured uncrustify additional arguments: 
+[0.444s] -- Added test 'xmllint' to check XML markup files
+[0.445s] -- Configuring done (0.4s)
+[0.466s] -- Generating done (0.0s)
+[0.472s] -- Build files have been written to: /home/juza/humanoid_ws/build/humanoid_motor_control
+[0.480s] Invoked command in '/home/juza/humanoid_ws/build/humanoid_motor_control' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/juza/humanoid_ws/src/humanoid_motor_control -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/juza/humanoid_ws/install/humanoid_motor_control
+[0.480s] Invoking command in '/home/juza/humanoid_ws/build/humanoid_motor_control': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/juza/humanoid_ws/build/humanoid_motor_control -- -j28 -l28
+[0.559s] [ 14%] [32mBuilding CXX object CMakeFiles/diff_drive_controller.dir/src/diff_drive_controller.cpp.o[0m
+[0.559s] [ 28%] [32mBuilding CXX object CMakeFiles/cytron_controller_node.dir/src/cytron_controller.cpp.o[0m
+[0.560s] [ 57%] [32mBuilding CXX object CMakeFiles/encoder_node.dir/src/encoder_node.cpp.o[0m
+[0.560s] [ 57%] [32mBuilding CXX object CMakeFiles/cytron_controller_node.dir/src/cytron_controller_node.cpp.o[0m
+[0.571s] [01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/cytron_controller_node.cpp:1:10:[m[K [01;31m[Kfatal error: [m[Khumanoid_motor_control/cytron_controller.hpp: No such file or directory
+[0.571s]     1 | #include [01;31m[K"humanoid_motor_control/cytron_controller.hpp"[m[K
+[0.571s]       |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[0.572s] compilation terminated.
+[0.572s] [01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/cytron_controller.cpp:1:10:[m[K [01;31m[Kfatal error: [m[Khumanoid_motor_control/cytron_controller.hpp: No such file or directory
+[0.572s]     1 | #include [01;31m[K"humanoid_motor_control/cytron_controller.hpp"[m[K
+[0.572s]       |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[0.572s] compilation terminated.
+[0.572s] gmake[2]: *** [CMakeFiles/cytron_controller_node.dir/build.make:76: CMakeFiles/cytron_controller_node.dir/src/cytron_controller_node.cpp.o] Error 1
+[0.572s] gmake[2]: *** Waiting for unfinished jobs....
+[0.572s] gmake[2]: *** [CMakeFiles/cytron_controller_node.dir/build.make:90: CMakeFiles/cytron_controller_node.dir/src/cytron_controller.cpp.o] Error 1
+[0.573s] gmake[1]: *** [CMakeFiles/Makefile2:141: CMakeFiles/cytron_controller_node.dir/all] Error 2
+[0.573s] gmake[1]: *** Waiting for unfinished jobs....
+[0.904s] [01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/encoder_node.cpp:4:10:[m[K [01;31m[Kfatal error: [m[KwiringPi.h: No such file or directory
+[0.905s]     4 | #include [01;31m[K<wiringPi.h>[m[K
+[0.905s]       |          [01;31m[K^~~~~~~~~~~~[m[K
+[0.905s] compilation terminated.
+[0.906s] [01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/diff_drive_controller.cpp:4:10:[m[K [01;31m[Kfatal error: [m[Ksensor_msgs/msg/joint_state.hpp: No such file or directory
+[0.906s]     4 | #include [01;31m[K<sensor_msgs/msg/joint_state.hpp>[m[K
+[0.907s]       |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[0.907s] compilation terminated.
+[0.910s] gmake[2]: *** [CMakeFiles/encoder_node.dir/build.make:76: CMakeFiles/encoder_node.dir/src/encoder_node.cpp.o] Error 1
+[0.911s] gmake[1]: *** [CMakeFiles/Makefile2:167: CMakeFiles/encoder_node.dir/all] Error 2
+[0.912s] gmake[2]: *** [CMakeFiles/diff_drive_controller.dir/build.make:76: CMakeFiles/diff_drive_controller.dir/src/diff_drive_controller.cpp.o] Error 1
+[0.912s] gmake[1]: *** [CMakeFiles/Makefile2:193: CMakeFiles/diff_drive_controller.dir/all] Error 2
+[0.913s] gmake: *** [Makefile:146: all] Error 2
+[0.916s] Invoked command in '/home/juza/humanoid_ws/build/humanoid_motor_control' returned '2': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/juza/humanoid_ws/build/humanoid_motor_control -- -j28 -l28

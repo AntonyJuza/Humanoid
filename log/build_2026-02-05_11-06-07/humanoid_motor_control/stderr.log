@@ -1,0 +1,26 @@
+[01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/cytron_controller_node.cpp:1:10:[m[K [01;31m[Kfatal error: [m[Khumanoid_motor_control/cytron_controller.hpp: No such file or directory
+    1 | #include [01;31m[K"humanoid_motor_control/cytron_controller.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+[01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/cytron_controller.cpp:1:10:[m[K [01;31m[Kfatal error: [m[Khumanoid_motor_control/cytron_controller.hpp: No such file or directory
+    1 | #include [01;31m[K"humanoid_motor_control/cytron_controller.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/cytron_controller_node.dir/build.make:76: CMakeFiles/cytron_controller_node.dir/src/cytron_controller_node.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** [CMakeFiles/cytron_controller_node.dir/build.make:90: CMakeFiles/cytron_controller_node.dir/src/cytron_controller.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:141: CMakeFiles/cytron_controller_node.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+[01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/encoder_node.cpp:4:10:[m[K [01;31m[Kfatal error: [m[KwiringPi.h: No such file or directory
+    4 | #include [01;31m[K<wiringPi.h>[m[K
+      |          [01;31m[K^~~~~~~~~~~~[m[K
+compilation terminated.
+[01m[K/home/juza/humanoid_ws/src/humanoid_motor_control/src/diff_drive_controller.cpp:4:10:[m[K [01;31m[Kfatal error: [m[Ksensor_msgs/msg/joint_state.hpp: No such file or directory
+    4 | #include [01;31m[K<sensor_msgs/msg/joint_state.hpp>[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/encoder_node.dir/build.make:76: CMakeFiles/encoder_node.dir/src/encoder_node.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:167: CMakeFiles/encoder_node.dir/all] Error 2
+gmake[2]: *** [CMakeFiles/diff_drive_controller.dir/build.make:76: CMakeFiles/diff_drive_controller.dir/src/diff_drive_controller.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:193: CMakeFiles/diff_drive_controller.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

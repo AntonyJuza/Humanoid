@@ -1,0 +1,1 @@
+/home/juza/humanoid_ws/build/humanoid_vlm_bridge/ament_cmake_core/humanoid_vlm_bridgeConfig.cmake

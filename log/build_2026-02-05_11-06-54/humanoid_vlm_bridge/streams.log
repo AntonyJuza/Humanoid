@@ -1,0 +1,21 @@
+[0.003s] Invoking command in '/home/juza/humanoid_ws/build/humanoid_vlm_bridge': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/juza/humanoid_ws/build/humanoid_vlm_bridge -- -j28 -l28
+[0.030s] Invoked command in '/home/juza/humanoid_ws/build/humanoid_vlm_bridge' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/juza/humanoid_ws/build/humanoid_vlm_bridge -- -j28 -l28
+[0.037s] Invoking command in '/home/juza/humanoid_ws/build/humanoid_vlm_bridge': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/juza/humanoid_ws/build/humanoid_vlm_bridge
+[0.042s] -- Install configuration: ""
+[0.042s] -- Execute custom install script
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/ament_index/resource_index/package_run_dependencies/humanoid_vlm_bridge
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/ament_index/resource_index/parent_prefix_path/humanoid_vlm_bridge
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/environment/ament_prefix_path.sh
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/environment/ament_prefix_path.dsv
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/environment/path.sh
+[0.042s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/environment/path.dsv
+[0.043s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/local_setup.bash
+[0.043s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/local_setup.sh
+[0.043s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/local_setup.zsh
+[0.043s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/local_setup.dsv
+[0.043s] -- Symlinking: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/package.dsv
+[0.049s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/ament_index/resource_index/packages/humanoid_vlm_bridge
+[0.049s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/cmake/humanoid_vlm_bridgeConfig.cmake
+[0.049s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/cmake/humanoid_vlm_bridgeConfig-version.cmake
+[0.049s] -- Up-to-date symlink: /home/juza/humanoid_ws/install/humanoid_vlm_bridge/share/humanoid_vlm_bridge/package.xml
+[0.050s] Invoked command in '/home/juza/humanoid_ws/build/humanoid_vlm_bridge' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/juza/humanoid_ws/build/humanoid_vlm_bridge
