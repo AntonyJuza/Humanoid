@@ -1,4 +1,0 @@
-source;share/humanoid_vlm_bridge/local_setup.bash
-source;share/humanoid_vlm_bridge/local_setup.dsv
-source;share/humanoid_vlm_bridge/local_setup.sh
-source;share/humanoid_vlm_bridge/local_setup.zsh

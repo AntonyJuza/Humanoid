@@ -1,1 +1,0 @@
-/home/juza/humanoid_ws/build/humanoid_vlm_bridge/ament_cmake_environment_hooks/local_setup.zsh
