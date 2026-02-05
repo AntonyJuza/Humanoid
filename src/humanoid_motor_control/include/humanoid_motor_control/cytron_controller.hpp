@@ -73,6 +73,7 @@ private:
   int rc1_pin_;  // GPIO pin for RC1 (left motors)
   int rc2_pin_;  // GPIO pin for RC2 (right motors)
   bool is_initialized_;
+  int pigpio_handle_ = -1;
 
   // PWM constants (microseconds)
   static constexpr int PWM_MIN = 1000;
