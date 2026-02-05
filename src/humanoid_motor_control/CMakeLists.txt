@@ -16,6 +16,10 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
+# Find pigpio library
+find_library(PIGPIO_LIBRARY pigpio REQUIRED)
+
+
 # Cytron MDDRC10 Motor Controller Node
 add_executable(cytron_controller_node 
   src/cytron_controller_node.cpp
@@ -33,6 +37,7 @@ target_include_directories(cytron_controller_node
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+target_link_libraries(cytron_controller_node ${PIGPIO_LIBRARY})
 
 # Encoder Reader Node
 add_executable(encoder_node 
@@ -43,6 +48,7 @@ ament_target_dependencies(encoder_node
   std_msgs
   sensor_msgs
 )
+target_link_libraries(encoder_node ${PIGPIO_LIBRARY})
 
 # Differential Drive Controller
 add_executable(diff_drive_controller 

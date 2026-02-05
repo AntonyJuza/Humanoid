@@ -1,6 +1,5 @@
 #include "humanoid_motor_control/cytron_controller.hpp"
-#include <wiringPi.h>
-#include <softPwm.h>
+#include <pigpio.h>
 #include <iostream>
 #include <algorithm>
 #include <thread>
@@ -24,15 +23,16 @@ bool CytronController::init(int rc1_pin, int rc2_pin)
   rc1_pin_ = rc1_pin;
   rc2_pin_ = rc2_pin;
   
-  // Initialize WiringPi using BCM GPIO numbering
-  if (wiringPiSetupGpio() == -1) {
-    std::cerr << "Error: Failed to initialize WiringPi" << std::endl;
+  // Initialize pigpio library
+  if (gpioInitialise() < 0) {
+    std::cerr << "Error: Failed to initialize pigpio" << std::endl;
+    std::cerr << "Make sure pigpiod daemon is running: sudo pigpiod" << std::endl;
     return false;
   }
 
   // Set pins as outputs
-  pinMode(rc1_pin_, OUTPUT);
-  pinMode(rc2_pin_, OUTPUT);
+  gpioSetMode(rc1_pin_, PI_OUTPUT);
+  gpioSetMode(rc2_pin_, PI_OUTPUT);
 
   // Initialize both channels to neutral position (1500μs)
   // This is CRITICAL - must send 1500μs on startup for calibration
@@ -107,9 +107,11 @@ void CytronController::emergencyStop()
     return;
   }
 
-  // Send neutral position to both channels
-  sendPWM(rc1_pin_, PWM_NEUTRAL);
-  sendPWM(rc2_pin_, PWM_NEUTRAL);
+  // Send neutral position to both channels using servo pulses
+  gpioServo(rc1_pin_, PWM_NEUTRAL);
+  gpioServo(rc2_pin_, PWM_NEUTRAL);
+  
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
   std::cout << "Emergency stop - motors neutral" << std::endl;
 }
@@ -121,6 +123,7 @@ void CytronController::close()
     // Wait a bit to ensure signals are sent
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     is_initialized_ = false;
+    gpioTerminate();
   }
 }
 
@@ -147,18 +150,9 @@ int CytronController::speedToPWM(int16_t speed)
 
 void CytronController::sendPWM(int pin, int pulse_width_us)
 {
-  // Generate RC PWM signal using bit-banging
-  // Standard RC PWM: 50Hz (20ms period), pulse width 1000-2000μs
-  
-  digitalWrite(pin, HIGH);
-  delayMicroseconds(pulse_width_us);
-  digitalWrite(pin, LOW);
-  
-  // Complete the 20ms period (20000μs - pulse_width)
-  int remaining_us = 20000 - pulse_width_us;
-  if (remaining_us > 0) {
-    delayMicroseconds(remaining_us);
-  }
+  // Use pigpio's hardware-timed servo function for accurate RC PWM
+  // gpioServo automatically generates 50Hz PWM signal with specified pulse width
+  gpioServo(pin, pulse_width_us);
 }
 
 int16_t CytronController::clampSpeed(int16_t speed)

@@ -1,6 +1,5 @@
 #include "humanoid_motor_control/cytron_controller.hpp"
-#include <wiringPi.h>
-#include <softPwm.h>
+#include <pigpio.h>
 #include <iostream>
 #include <algorithm>
 #include <thread>
