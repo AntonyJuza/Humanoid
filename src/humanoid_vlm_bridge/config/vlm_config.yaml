@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    # Model configuration
+    model_path: "~/models/Qwen2.5-Omni-3B"
+    device: "cuda"  # or "cpu" for CPU-only inference
+    
+    # Camera topics
+    camera_topic: "/camera/image_raw"
+    use_compressed: false
+    
+    # Processing parameters
+    process_rate: 2.0  # Hz - how often to process vision queries
+    max_queue_size: 5
+    
+    # Intent executor parameters
+    linear_speed: 0.3  # m/s
+    angular_speed: 0.5  # rad/s
+    action_duration: 2.0  # seconds

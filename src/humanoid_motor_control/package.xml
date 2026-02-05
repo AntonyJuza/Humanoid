@@ -4,7 +4,7 @@
   <name>humanoid_motor_control</name>
   <version>0.1.0</version>
   <description>Motor control package for Cytron MDDRC10 driver with 4 DC motors</description>
-  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <maintainer email="antonyjuza@gmail.com">Juza</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
