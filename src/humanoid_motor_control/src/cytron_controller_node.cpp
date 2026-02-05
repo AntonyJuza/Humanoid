@@ -1,169 +1,82 @@
 #include "humanoid_motor_control/cytron_controller.hpp"
-#include <wiringPi.h>
-#include <softPwm.h>
-#include <iostream>
-#include <algorithm>
-#include <thread>
-#include <chrono>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 
-namespace humanoid_motor_control
-{
+using humanoid_motor_control::CytronController;
 
-CytronController::CytronController()
-: rc1_pin_(-1), rc2_pin_(-1), is_initialized_(false)
+class CytronNode : public rclcpp::Node
 {
+public:
+    CytronNode()
+    : Node("cytron_controller_node")
+    {
+        // Parameters for motor pins
+        int rc1 = this->declare_parameter("rc1_pin", 12);
+        int rc2 = this->declare_parameter("rc2_pin", 13);
+
+        if (!controller_.init(rc1, rc2)) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to initialize CytronController");
+        } else {
+            RCLCPP_INFO(this->get_logger(), "CytronController initialized on RC1=%d RC2=%d", rc1, rc2);
+        }
+
+        // Publisher for wheel velocities
+        wheel_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/wheel_velocities", 10);
+
+        // Subscriber for /cmd_vel
+        cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            std::bind(&CytronNode::cmdVelCallback, this, std::placeholders::_1));
+
+        // Maximum linear speed (m/s) and angular speed (rad/s) for mapping
+        max_linear_speed_ = this->declare_parameter("max_linear_speed", 0.5);
+        max_angular_speed_ = this->declare_parameter("max_angular_speed", 1.0);
+        wheel_base_ = this->declare_parameter("wheel_base", 0.15); // meters
+    }
+
+    ~CytronNode()
+    {
+        controller_.close();
+    }
+
+private:
+    void cmdVelCallback(const geometry_msgs::msg::Twist::SharedPtr msg)
+    {
+        // Map linear and angular velocities to left/right motor speeds (-100 to 100)
+        double linear = msg->linear.x;
+        double angular = msg->angular.z;
+
+        int left_speed = static_cast<int>(100 * (linear - angular * wheel_base_ / 2.0) / max_linear_speed_);
+        int right_speed = static_cast<int>(100 * (linear + angular * wheel_base_ / 2.0) / max_linear_speed_);
+
+        // Clamp speeds to [-100, 100]
+        left_speed = std::clamp(left_speed, -100, 100);
+        right_speed = std::clamp(right_speed, -100, 100);
+
+        // Send speeds to CytronController
+        controller_.setLeftRight(left_speed, right_speed);
+
+        // Publish wheel velocities for monitoring
+        auto wheel_msg = geometry_msgs::msg::Twist();
+        wheel_msg.linear.x = static_cast<double>(left_speed);
+        wheel_msg.linear.y = static_cast<double>(right_speed);
+        wheel_vel_pub_->publish(wheel_msg);
+    }
+
+    CytronController controller_;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr wheel_vel_pub_;
+
+    double max_linear_speed_;
+    double max_angular_speed_;
+    double wheel_base_;
+};
+
+int main(int argc, char **argv)
+{
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<CytronNode>();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    return 0;
 }
-
-CytronController::~CytronController()
-{
-  close();
-}
-
-bool CytronController::init(int rc1_pin, int rc2_pin)
-{
-  rc1_pin_ = rc1_pin;
-  rc2_pin_ = rc2_pin;
-  
-  // Initialize WiringPi using BCM GPIO numbering
-  if (wiringPiSetupGpio() == -1) {
-    std::cerr << "Error: Failed to initialize WiringPi" << std::endl;
-    return false;
-  }
-
-  // Set pins as outputs
-  pinMode(rc1_pin_, OUTPUT);
-  pinMode(rc2_pin_, OUTPUT);
-
-  // Initialize both channels to neutral position (1500μs)
-  // This is CRITICAL - must send 1500μs on startup for calibration
-  std::cout << "Initializing Cytron MDDRC10 - sending neutral signals..." << std::endl;
-  
-  for (int i = 0; i < 50; ++i) {  // Send neutral for ~1 second
-    sendPWM(rc1_pin_, PWM_NEUTRAL);
-    sendPWM(rc2_pin_, PWM_NEUTRAL);
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  }
-
-  is_initialized_ = true;
-  std::cout << "Cytron controller initialized on GPIO pins RC1=" 
-            << rc1_pin_ << ", RC2=" << rc2_pin_ << std::endl;
-  
-  return true;
-}
-
-void CytronController::setMotorSpeed(uint8_t motor_id, int16_t speed)
-{
-  if (!is_initialized_ || motor_id > 3) {
-    return;
-  }
-
-  speed = clampSpeed(speed);
-
-  // Motors 0,2 = left (RC1), Motors 1,3 = right (RC2)
-  if (motor_id == 0 || motor_id == 2) {
-    // Left motors - send to RC1
-    int pwm = speedToPWM(speed);
-    sendPWM(rc1_pin_, pwm);
-  } else {
-    // Right motors - send to RC2
-    int pwm = speedToPWM(speed);
-    sendPWM(rc2_pin_, pwm);
-  }
-}
-
-void CytronController::setLeftRight(int16_t left_speed, int16_t right_speed)
-{
-  if (!is_initialized_) {
-    return;
-  }
-
-  left_speed = clampSpeed(left_speed);
-  right_speed = clampSpeed(right_speed);
-
-  int left_pwm = speedToPWM(left_speed);
-  int right_pwm = speedToPWM(right_speed);
-
-  sendPWM(rc1_pin_, left_pwm);
-  sendPWM(rc2_pin_, right_pwm);
-}
-
-void CytronController::setAllMotors(const std::vector<int16_t> & speeds)
-{
-  if (speeds.size() != 4) {
-    std::cerr << "Error: Expected 4 motor speeds" << std::endl;
-    return;
-  }
-
-  // Average left motors (0, 2) and right motors (1, 3)
-  int16_t left_avg = (speeds[0] + speeds[2]) / 2;
-  int16_t right_avg = (speeds[1] + speeds[3]) / 2;
-
-  setLeftRight(left_avg, right_avg);
-}
-
-void CytronController::emergencyStop()
-{
-  if (!is_initialized_) {
-    return;
-  }
-
-  // Send neutral position to both channels
-  sendPWM(rc1_pin_, PWM_NEUTRAL);
-  sendPWM(rc2_pin_, PWM_NEUTRAL);
-  
-  std::cout << "Emergency stop - motors neutral" << std::endl;
-}
-
-void CytronController::close()
-{
-  if (is_initialized_) {
-    emergencyStop();
-    // Wait a bit to ensure signals are sent
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    is_initialized_ = false;
-  }
-}
-
-int CytronController::speedToPWM(int16_t speed)
-{
-  // speed: -100 to 100
-  // PWM: 1000 to 2000 microseconds
-  // 1500 = neutral (stop)
-  // <1500 = counter-clockwise (reverse)
-  // >1500 = clockwise (forward)
-
-  // Clamp speed to valid range
-  speed = clampSpeed(speed);
-
-  // Convert: speed of 100 -> 2000μs, speed of -100 -> 1000μs, speed of 0 -> 1500μs
-  // Formula: PWM = 1500 + (speed * 5)
-  int pwm = PWM_NEUTRAL + (speed * PWM_RANGE / 100);
-
-  // Ensure within bounds
-  pwm = std::clamp(pwm, PWM_MIN, PWM_MAX);
-
-  return pwm;
-}
-
-void CytronController::sendPWM(int pin, int pulse_width_us)
-{
-  // Generate RC PWM signal using bit-banging
-  // Standard RC PWM: 50Hz (20ms period), pulse width 1000-2000μs
-  
-  digitalWrite(pin, HIGH);
-  delayMicroseconds(pulse_width_us);
-  digitalWrite(pin, LOW);
-  
-  // Complete the 20ms period (20000μs - pulse_width)
-  int remaining_us = 20000 - pulse_width_us;
-  if (remaining_us > 0) {
-    delayMicroseconds(remaining_us);
-  }
-}
-
-int16_t CytronController::clampSpeed(int16_t speed)
-{
-  return std::clamp(speed, static_cast<int16_t>(-100), static_cast<int16_t>(100));
-}
-
-}  // namespace humanoid_motor_control

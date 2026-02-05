@@ -1,9 +1,32 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
-#include <wiringPi.h>
+#include <pigpiod_if2.h>
 #include <vector>
 #include <string>
+#include <mutex>
+
+// Global variables for interrupt callbacks (only two encoders)
+std::vector<int64_t> g_encoder_counts(2, 0);
+std::mutex g_encoder_mutex;
+static int g_pigpio_handle = -1;
+
+// Interrupt callback functions (one for each encoder)
+void encoder0_callback(int pi, unsigned user_gpio, unsigned level, uint32_t tick) {
+  if (level == 1) {  // Rising edge
+    std::lock_guard<std::mutex> lock(g_encoder_mutex);
+    g_encoder_counts[0]++;
+  }
+}
+
+void encoder1_callback(int pi, unsigned user_gpio, unsigned level, uint32_t tick) {
+  if (level == 1) {
+    std::lock_guard<std::mutex> lock(g_encoder_mutex);
+    g_encoder_counts[1]++;
+  }
+}
+
+// (Only two encoders used; callbacks for encoder 2 and 3 removed)
 
 class EncoderNode : public rclcpp::Node
 {
@@ -11,11 +34,11 @@ public:
   EncoderNode()
   : Node("encoder_node")
   {
-    // Declare parameters
-    this->declare_parameter("encoder_pins", std::vector<int64_t>{17, 18, 27, 22});  // GPIO pins
-    this->declare_parameter("pulses_per_revolution", 20);  // Adjust based on your encoder
-    this->declare_parameter("wheel_radius", 0.05);  // meters
-    this->declare_parameter("publish_rate", 50.0);  // Hz
+    // Declare parameters (default: two encoder pins)
+    this->declare_parameter("encoder_pins", std::vector<int64_t>{17, 18});
+    this->declare_parameter("pulses_per_revolution", 20);
+    this->declare_parameter("wheel_radius", 0.05);
+    this->declare_parameter("publish_rate", 50.0);
 
     // Get parameters
     auto pin_params = this->get_parameter("encoder_pins").as_integer_array();
@@ -24,27 +47,31 @@ public:
     wheel_radius_ = this->get_parameter("wheel_radius").as_double();
     double pub_rate = this->get_parameter("publish_rate").as_double();
 
-    // Initialize encoder counts
-    encoder_counts_.resize(encoder_pins_.size(), 0);
+    // Initialize storage
+    g_encoder_counts.resize(encoder_pins_.size(), 0);
     last_encoder_counts_.resize(encoder_pins_.size(), 0);
     velocities_.resize(encoder_pins_.size(), 0.0);
 
-    // Initialize WiringPi
-    if (wiringPiSetupGpio() == -1) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to initialize WiringPi");
+    // Connect to pigpio daemon
+    if ((g_pigpio_handle = pigpio_start(NULL, NULL)) < 0) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to start pigpio daemon interface");
+      RCLCPP_ERROR(this->get_logger(), "Make sure pigpiod is running: sudo pigpiod");
       rclcpp::shutdown();
       return;
     }
 
-    // Setup GPIO pins for encoders
-    for (size_t i = 0; i < encoder_pins_.size(); ++i) {
-      pinMode(encoder_pins_[i], INPUT);
-      pullUpDnControl(encoder_pins_[i], PUD_UP);
-      
-      // Setup interrupt for encoder pulse counting
-      // Note: This is simplified. For proper quadrature encoding, you'd need both A and B channels
-      wiringPiISR(encoder_pins_[i], INT_EDGE_RISING, 
-                  [this, i]() { this->encoderCallback(i); });
+
+    // Setup GPIO pins and interrupts for two encoders
+    if (encoder_pins_.size() >= 1 && encoder_pins_[0] >= 0) {
+      set_mode(g_pigpio_handle, encoder_pins_[0], PI_INPUT);
+      set_pull_up_down(g_pigpio_handle, encoder_pins_[0], PI_PUD_UP);
+      callback(g_pigpio_handle, encoder_pins_[0], RISING_EDGE, encoder0_callback);
+    }
+
+    if (encoder_pins_.size() >= 2 && encoder_pins_[1] >= 0) {
+      set_mode(g_pigpio_handle, encoder_pins_[1], PI_INPUT);
+      set_pull_up_down(g_pigpio_handle, encoder_pins_[1], PI_PUD_UP);
+      callback(g_pigpio_handle, encoder_pins_[1], RISING_EDGE, encoder1_callback);
     }
 
     // Create publishers
@@ -62,17 +89,24 @@ public:
 
     last_time_ = this->now();
 
-    RCLCPP_INFO(this->get_logger(), "Encoder node started with %zu encoders", 
-                encoder_pins_.size());
+    if (encoder_pins_.size() >= 2) {
+      RCLCPP_INFO(this->get_logger(), "Encoder node started with %zu encoders on GPIO pins: %d, %d", 
+                  encoder_pins_.size(), encoder_pins_[0], encoder_pins_[1]);
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Encoder node started with %zu encoders", encoder_pins_.size());
+    }
+  }
+
+  ~EncoderNode()
+  {
+    // Clean up pigpio daemon connection
+    if (g_pigpio_handle >= 0) {
+      pigpio_stop(g_pigpio_handle);
+      g_pigpio_handle = -1;
+    }
   }
 
 private:
-  void encoderCallback(size_t encoder_id)
-  {
-    std::lock_guard<std::mutex> lock(encoder_mutex_);
-    encoder_counts_[encoder_id]++;
-  }
-
   void publishEncoderData()
   {
     auto current_time = this->now();
@@ -82,11 +116,11 @@ private:
       return;
     }
 
-    std::lock_guard<std::mutex> lock(encoder_mutex_);
+    std::lock_guard<std::mutex> lock(g_encoder_mutex);
 
-    // Calculate velocities
-    for (size_t i = 0; i < encoder_counts_.size(); ++i) {
-      int64_t delta_counts = encoder_counts_[i] - last_encoder_counts_[i];
+    // Calculate velocities (for two encoders)
+    for (size_t i = 0; i < g_encoder_counts.size() && i < encoder_pins_.size(); ++i) {
+      int64_t delta_counts = g_encoder_counts[i] - last_encoder_counts_[i];
       
       // Calculate angular velocity (rad/s)
       double revolutions = static_cast<double>(delta_counts) / ppr_;
@@ -95,14 +129,14 @@ private:
       // Calculate linear velocity (m/s)
       velocities_[i] = angular_vel * wheel_radius_;
       
-      last_encoder_counts_[i] = encoder_counts_[i];
+      last_encoder_counts_[i] = g_encoder_counts[i];
     }
 
-    // Publish joint states
+    // Publish joint states (two wheels)
     auto joint_msg = sensor_msgs::msg::JointState();
     joint_msg.header.stamp = current_time;
-    joint_msg.name = {"wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"};
-    joint_msg.position.resize(4, 0.0);  // Position integration could be added
+    joint_msg.name = {"wheel_left", "wheel_right"};
+    joint_msg.position.resize(2, 0.0);
     joint_msg.velocity = velocities_;
 
     joint_state_pub_->publish(joint_msg);
@@ -116,7 +150,6 @@ private:
   }
 
   std::vector<int> encoder_pins_;
-  std::vector<int64_t> encoder_counts_;
   std::vector<int64_t> last_encoder_counts_;
   std::vector<double> velocities_;
   
@@ -128,7 +161,6 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   
   rclcpp::Time last_time_;
-  std::mutex encoder_mutex_;
 };
 
 int main(int argc, char ** argv)
