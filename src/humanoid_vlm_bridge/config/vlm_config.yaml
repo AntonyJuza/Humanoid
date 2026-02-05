@@ -4,13 +4,13 @@
     model_path: "~/models/Qwen2.5-Omni-3B"
     device: "cuda"  # or "cpu" for CPU-only inference
     
-    # Camera topics
-    camera_topic: "/camera/image_raw"
-    use_compressed: false
+    # Set to false if Android tablet runs the VLM directly
+    # Set to true if Gaming PC should run the VLM
+    use_local_model: true
     
-    # Processing parameters
-    process_rate: 2.0  # Hz - how often to process vision queries
-    max_queue_size: 5
+    # Note: Camera and video handled by Android tablet
+    # Android sends text/audio queries via ROS2 topics
+    # VLM responses sent back to Android for display
     
     # Intent executor parameters
     linear_speed: 0.3  # m/s

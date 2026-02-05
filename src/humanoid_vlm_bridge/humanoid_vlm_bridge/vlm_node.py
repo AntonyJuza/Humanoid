@@ -3,21 +3,18 @@
 VLM Node - Qwen2.5-Omni Integration for Humanoid Robot
 
 This node handles communication with the Qwen2.5-Omni VLM model running on the gaming PC.
-It processes vision and audio inputs, sends them to the VLM, and publishes responses.
+The VLM receives video and audio from Android tablet directly (not through ROS).
+This node only handles:
+  - Text queries from Android → VLM
+  - VLM responses → Robot actions (intents)
 """
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, CompressedImage
 from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
-from cv_bridge import CvBridge
-import cv2
-import numpy as np
-import base64
 import json
 import threading
-import queue
 from typing import Optional, Dict, Any
 
 try:
@@ -37,52 +34,28 @@ class VLMNode(Node):
         # Declare parameters
         self.declare_parameter('model_path', '~/models/Qwen2.5-Omni-3B')
         self.declare_parameter('device', 'cuda')
-        self.declare_parameter('camera_topic', '/camera/image_raw')
-        self.declare_parameter('use_compressed', False)
-        self.declare_parameter('process_rate', 2.0)  # Hz, how often to process images
-        self.declare_parameter('max_queue_size', 5)
+        self.declare_parameter('use_local_model', True)  # If false, expects external VLM API
         
         # Get parameters
         model_path = self.get_parameter('model_path').value
         self.device = self.get_parameter('device').value
-        camera_topic = self.get_parameter('camera_topic').value
-        use_compressed = self.get_parameter('use_compressed').value
-        process_rate = self.get_parameter('process_rate').value
-        max_queue_size = self.get_parameter('max_queue_size').value
+        use_local_model = self.get_parameter('use_local_model').value
         
-        # Initialize CV Bridge
-        self.bridge = CvBridge()
-        
-        # Image queue for processing
-        self.image_queue = queue.Queue(maxsize=max_queue_size)
-        self.latest_image = None
-        
-        # VLM model and processor
+        # VLM model and processor (optional if Android handles it)
         self.model = None
         self.processor = None
         
-        # Load model
-        if TORCH_AVAILABLE:
+        # Load model if running locally on this machine
+        if use_local_model and TORCH_AVAILABLE:
             self.load_model(model_path)
         else:
-            self.get_logger().error('PyTorch or transformers not available! Install with: pip install torch transformers')
+            if not TORCH_AVAILABLE:
+                self.get_logger().warn('PyTorch not available. Expecting VLM responses from Android.')
+            else:
+                self.get_logger().info('Local model disabled. Expecting VLM responses from Android.')
         
         # Create subscribers
-        if use_compressed:
-            self.image_sub = self.create_subscription(
-                CompressedImage,
-                camera_topic + '/compressed',
-                self.compressed_image_callback,
-                10
-            )
-        else:
-            self.image_sub = self.create_subscription(
-                Image,
-                camera_topic,
-                self.image_callback,
-                10
-            )
-        
+        # Text input from Android app (user query)
         self.text_input_sub = self.create_subscription(
             String,
             'vlm_text_input',
@@ -90,6 +63,15 @@ class VLMNode(Node):
             10
         )
         
+        # Direct VLM response from Android (if Android runs the VLM)
+        self.vlm_response_sub = self.create_subscription(
+            String,
+            'vlm_response_from_android',
+            self.vlm_response_callback,
+            10
+        )
+        
+        # Audio input from Android (transcribed speech)
         self.audio_input_sub = self.create_subscription(
             String,
             'vlm_audio_input',
@@ -98,22 +80,23 @@ class VLMNode(Node):
         )
         
         # Create publishers
+        # Send responses back to Android display
         self.response_pub = self.create_publisher(String, 'vlm_response', 10)
-        self.intent_pub = self.create_publisher(String, 'vlm_intent', 10)
-        self.status_pub = self.create_publisher(Bool, 'vlm_ready', 10)
         
-        # Processing thread
-        self.processing = True
-        self.process_thread = threading.Thread(target=self.process_loop, daemon=True)
-        self.process_thread.start()
+        # Intent commands for robot actions
+        self.intent_pub = self.create_publisher(String, 'vlm_intent', 10)
+        
+        # Status indicator
+        self.status_pub = self.create_publisher(Bool, 'vlm_ready', 10)
         
         # Timer for periodic status updates
         self.create_timer(1.0, self.publish_status)
         
-        self.get_logger().info('VLM Node initialized')
+        self.get_logger().info('VLM Node initialized (Android handles camera/video)')
+        self.get_logger().info('Listening for text/audio queries from Android')
     
     def load_model(self, model_path: str):
-        """Load Qwen2.5-Omni model"""
+        """Load Qwen2.5-Omni model (optional if VLM runs on Gaming PC)"""
         try:
             self.get_logger().info(f'Loading Qwen2.5-Omni model from {model_path}...')
             
@@ -130,64 +113,76 @@ class VLMNode(Node):
                 trust_remote_code=True
             )
             
-            self.get_logger().info('Model loaded successfully!')
+            self.get_logger().info('Model loaded successfully on Gaming PC!')
             
         except Exception as e:
             self.get_logger().error(f'Failed to load model: {e}')
+            self.get_logger().info('Will expect VLM responses from Android instead')
             self.model = None
             self.processor = None
     
-    def image_callback(self, msg: Image):
-        """Handle raw image messages"""
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='rgb8')
-            self.latest_image = cv_image
-            
-            # Add to queue if not full
-            if not self.image_queue.full():
-                self.image_queue.put(cv_image)
-        except Exception as e:
-            self.get_logger().error(f'Error processing image: {e}')
-    
-    def compressed_image_callback(self, msg: CompressedImage):
-        """Handle compressed image messages"""
-        try:
-            np_arr = np.frombuffer(msg.data, np.uint8)
-            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-            self.latest_image = cv_image
-            
-            if not self.image_queue.full():
-                self.image_queue.put(cv_image)
-        except Exception as e:
-            self.get_logger().error(f'Error processing compressed image: {e}')
-    
     def text_input_callback(self, msg: String):
-        """Handle text input for VLM query"""
-        if self.latest_image is not None:
-            self.process_vlm_query(msg.data, self.latest_image)
+        """
+        Handle text input from Android app
+        Android sends user query → Gaming PC processes with VLM → Returns intent
+        """
+        query = msg.data
+        self.get_logger().info(f'Received text query from Android: "{query}"')
+        
+        # If VLM is running on Gaming PC
+        if self.model is not None and self.processor is not None:
+            self.process_text_query(query)
         else:
-            self.get_logger().warn('No image available for VLM query')
+            # VLM is running on Android, just echo back
+            self.get_logger().info('No local VLM. Expecting response from Android via /vlm_response_from_android')
     
     def audio_input_callback(self, msg: String):
-        """Handle audio input (transcribed text)"""
-        # For Qwen2.5-Omni, audio can be processed as text
-        if self.latest_image is not None:
-            self.process_vlm_query(msg.data, self.latest_image, is_audio=True)
-        else:
-            self.get_logger().warn('No image available for audio query')
+        """
+        Handle audio input (transcribed speech) from Android
+        """
+        transcribed_text = msg.data
+        self.get_logger().info(f'Received audio input (transcribed): "{transcribed_text}"')
+        
+        # Process same as text
+        if self.model is not None:
+            self.process_text_query(transcribed_text)
     
-    def process_vlm_query(self, text: str, image: np.ndarray, is_audio: bool = False):
-        """Process a VLM query with vision and text"""
+    def vlm_response_callback(self, msg: String):
+        """
+        Handle VLM response from Android (if Android runs the VLM)
+        Android processes camera/audio with VLM → Sends response to ROS
+        """
+        response = msg.data
+        self.get_logger().info(f'Received VLM response from Android: "{response[:100]}..."')
+        
+        # Extract intent from response
+        intent = self.extract_intent(response)
+        
+        # Publish response back (for logging/display)
+        response_msg = String()
+        response_msg.data = response
+        self.response_pub.publish(response_msg)
+        
+        # Publish intent for robot action
+        if intent:
+            intent_msg = String()
+            intent_msg.data = intent
+            self.intent_pub.publish(intent_msg)
+            self.get_logger().info(f'Extracted intent: {intent}')
+    
+    def process_text_query(self, text: str):
+        """
+        Process a text query using local VLM (Gaming PC)
+        Note: Without camera images, this is text-only mode
+        """
         if self.model is None or self.processor is None:
             self.get_logger().error('Model not loaded!')
             return
         
         try:
-            # Prepare inputs
+            # Prepare text-only input (no image)
             inputs = self.processor(
                 text=text,
-                images=image,
                 return_tensors="pt"
             ).to(self.device)
             
@@ -204,7 +199,7 @@ class VLMNode(Node):
             # Decode response
             response = self.processor.decode(outputs[0], skip_special_tokens=True)
             
-            # Extract intent from response (simple keyword matching)
+            # Extract intent from response
             intent = self.extract_intent(response)
             
             # Publish response
@@ -224,47 +219,42 @@ class VLMNode(Node):
             self.get_logger().error(f'Error processing VLM query: {e}')
     
     def extract_intent(self, response: str) -> Optional[str]:
-        """Extract action intent from VLM response"""
+        """
+        Extract action intent from VLM response
+        Simple keyword matching - can be enhanced with better NLP
+        """
         response_lower = response.lower()
         
-        # Simple keyword-based intent extraction
+        # Intent keywords mapping
         intents = {
-            'move_forward': ['move forward', 'go forward', 'advance'],
-            'move_backward': ['move backward', 'go back', 'reverse'],
-            'turn_left': ['turn left', 'rotate left'],
-            'turn_right': ['turn right', 'rotate right'],
-            'stop': ['stop', 'halt', 'freeze'],
-            'follow': ['follow', 'chase', 'track'],
-            'wave': ['wave', 'greet', 'hello'],
-            'pick_up': ['pick up', 'grab', 'grasp'],
+            'move_forward': ['move forward', 'go forward', 'advance', 'go ahead', 'walk forward'],
+            'move_backward': ['move backward', 'go back', 'reverse', 'back up', 'move back'],
+            'turn_left': ['turn left', 'rotate left', 'go left', 'left turn'],
+            'turn_right': ['turn right', 'rotate right', 'go right', 'right turn'],
+            'stop': ['stop', 'halt', 'freeze', 'stand still', 'don\'t move'],
+            'follow': ['follow', 'chase', 'track', 'come with', 'follow me'],
+            'wave': ['wave', 'greet', 'hello', 'hi', 'say hi'],
+            'nod': ['nod', 'yes', 'agree', 'nod head'],
+            'look_around': ['look around', 'scan area', 'check surroundings'],
+            'dance': ['dance', 'move to music', 'groove'],
         }
         
+        # Check for intent keywords
         for intent, keywords in intents.items():
             if any(keyword in response_lower for keyword in keywords):
                 return intent
         
         return None
     
-    def process_loop(self):
-        """Background processing loop"""
-        while self.processing and rclpy.ok():
-            try:
-                # This can be used for periodic processing or background tasks
-                threading.Event().wait(0.5)
-            except Exception as e:
-                self.get_logger().error(f'Error in process loop: {e}')
-    
     def publish_status(self):
         """Publish VLM ready status"""
         status_msg = Bool()
-        status_msg.data = (self.model is not None)
+        # Ready if model loaded OR expecting responses from Android
+        status_msg.data = (self.model is not None) or True
         self.status_pub.publish(status_msg)
     
     def destroy_node(self):
         """Cleanup on node shutdown"""
-        self.processing = False
-        if hasattr(self, 'process_thread'):
-            self.process_thread.join(timeout=2.0)
         super().destroy_node()
 
 
