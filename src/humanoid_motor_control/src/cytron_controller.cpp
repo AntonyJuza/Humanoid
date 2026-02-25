@@ -92,7 +92,7 @@ void CytronController::setAllMotors(const std::vector<int16_t> & speeds)
   }
 
   // Average left motors (0, 2) and right motors (1, 3)
-  int16_t left_avg = (speeds[0] + speeds[2]) / 2;
+  int16_t left_avg = (speeds[0] + speeds[2]) / 2; 
   int16_t right_avg = (speeds[1] + speeds[3]) / 2;
 
   setLeftRight(left_avg, right_avg);
