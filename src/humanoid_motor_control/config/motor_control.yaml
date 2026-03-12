@@ -6,7 +6,7 @@ cytron_controller_node:
 
     
     # Robot dimensions
-    wheel_base: 0.40  # meters - distance between left and right wheels
+    wheel_base: 0.25  # meters - distance between left and right wheels
     wheel_radius: 0.05  # meters - radius of wheels
     
     # Motor configuration

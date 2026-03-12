@@ -1,0 +1,17 @@
+ultrasonic_sensor_node:
+  ros__parameters:
+    front_trig: 5
+    front_echo: 6
+    front_left_trig: 16
+    front_left_echo: 26
+    front_right_trig: 24
+    front_right_echo: 23
+    publish_rate_hz: 10.0
+    moving_avg_size: 5
+
+navigation_node:
+  ros__parameters:
+    danger_dist_cm: 25.0
+    caution_dist_cm: 50.0
+    forward_speed: 0.25
+    turn_speed: 0.6
