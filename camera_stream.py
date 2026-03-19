@@ -22,19 +22,20 @@ time.sleep(2)  # camera warm-up
 
 def generate_frames():
     while True:
-        # Capture frame
         frame = camera.capture_array()
 
-        # Convert RGB->BGR for OpenCV/YOLO
+        # Convert RGB->BGR
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-        # Encode as JPEG
+        # Rotate feed 180°
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+
         ret, buffer = cv2.imencode('.jpg', frame)
         if not ret:
             continue
+
         frame_bytes = buffer.tobytes()
 
-        # Yield as MJPEG frame
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
 
