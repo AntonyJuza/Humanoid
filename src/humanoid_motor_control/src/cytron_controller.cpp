@@ -4,12 +4,13 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <cmath>
 
 namespace humanoid_motor_control
 {
 
 CytronController::CytronController()
-: rc1_pin_(-1), rc2_pin_(-1), is_initialized_(false)
+: rc1_pin_(-1), rc2_pin_(-1), is_initialized_(false), left_trim_(1.0), right_trim_(1.0)
 {
 }
 
@@ -48,22 +49,28 @@ bool CytronController::init(int rc1_pin, int rc2_pin)
   return true;
 }
 
+void CytronController::setTrim(double left_trim, double right_trim)
+{
+  left_trim_ = std::max(0.0, left_trim);
+  right_trim_ = std::max(0.0, right_trim);
+}
+
 void CytronController::setMotorSpeed(uint8_t motor_id, int16_t speed)
 {
   if (!is_initialized_ || motor_id > 3) {
     return;
   }
 
-  speed = clampSpeed(speed);
-
   // Motors 0,2 = left (RC1), Motors 1,3 = right (RC2)
   if (motor_id == 0 || motor_id == 2) {
     // Left motors - send to RC1
-    int pwm = speedToPWM(speed);
+    int16_t trimmed_speed = clampSpeed(static_cast<int16_t>(std::round(speed * left_trim_)));
+    int pwm = speedToPWM(trimmed_speed);
     sendPWM(rc1_pin_, pwm);
   } else {
     // Right motors - send to RC2
-    int pwm = speedToPWM(speed);
+    int16_t trimmed_speed = clampSpeed(static_cast<int16_t>(std::round(speed * right_trim_)));
+    int pwm = speedToPWM(trimmed_speed);
     sendPWM(rc2_pin_, pwm);
   }
 }
@@ -74,11 +81,12 @@ void CytronController::setLeftRight(int16_t left_speed, int16_t right_speed)
     return;
   }
 
-  left_speed = clampSpeed(left_speed);
-  right_speed = clampSpeed(right_speed);
+  // Apply motor trim multipliers
+  int16_t trimmed_left = clampSpeed(static_cast<int16_t>(std::round(left_speed * left_trim_)));
+  int16_t trimmed_right = clampSpeed(static_cast<int16_t>(std::round(right_speed * right_trim_)));
 
-  int left_pwm = speedToPWM(left_speed);
-  int right_pwm = speedToPWM(right_speed);
+  int left_pwm = speedToPWM(trimmed_left);
+  int right_pwm = speedToPWM(trimmed_right);
 
   sendPWM(rc1_pin_, left_pwm);
   sendPWM(rc2_pin_, right_pwm);

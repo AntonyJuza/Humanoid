@@ -55,6 +55,23 @@ public:
   void setAllMotors(const std::vector<int16_t> & speeds);
 
   /**
+   * @brief Set trim scale factors for left and right motors
+   * @param left_trim Multiplier for left motors (e.g. 1.0 = nominal, 0.95 = 95%)
+   * @param right_trim Multiplier for right motors (e.g. 1.0 = nominal, 0.95 = 95%)
+   */
+  void setTrim(double left_trim, double right_trim);
+
+  /**
+   * @brief Get left motor trim factor
+   */
+  double getLeftTrim() const { return left_trim_; }
+
+  /**
+   * @brief Get right motor trim factor
+   */
+  double getRightTrim() const { return right_trim_; }
+
+  /**
    * @brief Emergency stop - set all motors to neutral (1500μs)
    */
   void emergencyStop();
@@ -74,6 +91,9 @@ private:
   int rc2_pin_;  // GPIO pin for RC2 (right motors)
   bool is_initialized_;
   int pigpio_handle_ = -1;
+
+  double left_trim_ = 1.0;   // Left motor multiplier (default 1.0)
+  double right_trim_ = 1.0;  // Right motor multiplier (default 1.0)
 
   // PWM constants (microseconds)
   static constexpr int PWM_MIN = 1000;
